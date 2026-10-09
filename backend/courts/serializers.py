@@ -17,12 +17,21 @@ class CourtSerializer(serializers.ModelSerializer):
 
     def to_internal_value(self, data):
         import json
-        mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
-        if 'operating_days' in mutable_data and isinstance(mutable_data['operating_days'], str):
-            try:
-                mutable_data['operating_days'] = json.loads(mutable_data['operating_days'])
-            except (ValueError, TypeError):
-                mutable_data['operating_days'] = [d.strip() for d in mutable_data['operating_days'].split(',') if d.strip()]
+        from django.http import QueryDict
+        from django.utils.datastructures import MultiValueDict
+
+        if isinstance(data, (QueryDict, MultiValueDict)):
+            mutable_data = data.dict()
+        else:
+            mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
+
+        if 'operating_days' in mutable_data:
+            val = mutable_data['operating_days']
+            if isinstance(val, str):
+                try:
+                    mutable_data['operating_days'] = json.loads(val)
+                except (ValueError, TypeError):
+                    mutable_data['operating_days'] = [d.strip() for d in val.split(',') if d.strip()]
         return super().to_internal_value(mutable_data)
 
     def update(self, instance, validated_data):

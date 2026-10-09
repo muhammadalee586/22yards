@@ -115,7 +115,27 @@ export default function EditCourtPage() {
     } catch (err: unknown) {
       const error = err as { response?: { data?: any } };
       console.error('Failed to update court:', error);
-      const detail = error.response?.data?.detail || 'Failed to update court. Please check all fields.';
+      let detail = 'Failed to update court. Please check all fields.';
+      const resData = error.response?.data;
+      if (resData) {
+        if (typeof resData === 'string') {
+          detail = resData;
+        } else if (resData.detail) {
+          detail = resData.detail;
+        } else if (typeof resData === 'object') {
+          const parts: string[] = [];
+          Object.entries(resData).forEach(([field, val]) => {
+            if (Array.isArray(val)) {
+              parts.push(`${field}: ${val.join(' ')}`);
+            } else if (typeof val === 'string') {
+              parts.push(`${field}: ${val}`);
+            }
+          });
+          if (parts.length > 0) {
+            detail = parts.join(' | ');
+          }
+        }
+      }
       setError(detail);
       toast.error(detail);
     } finally {
