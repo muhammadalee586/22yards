@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>22 Yards Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .pending { color: orange; font-weight: bold; }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏏 22 Yards - Frontend ↔️ Backend Connection Test</h1>
+
+    <div class="test-box">
+        <h2>1. Backend Server Test</h2>
+        <p id="backend-status" class="pending">Testing...</p>
+        <pre id="backend-result"></pre>
+    </div>
+
+    <div class="test-box">
+        <h2>2. Frontend Environment Test</h2>
+        <p id="frontend-status" class="pending">Checking...</p>
+        <pre id="frontend-result"></pre>
+    </div>
+
+    <div class="test-box">
+        <h2>3. CORS Test</h2>
+        <p id="cors-status" class="pending">Testing...</p>
+        <pre id="cors-result"></pre>
+    </div>
+
+    <div class="test-box">
+        <h2>4. Registration Endpoint Test</h2>
+        <button onclick="testRegistration()">Test Registration Format</button>
+        <p id="reg-status"></p>
+        <pre id="reg-result"></pre>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api';
+
+        // Test 1: Backend availability
+        async function testBackend() {
+            try {
+                const response = await fetch(`${API_URL}/courts/`);
+                const data = await response.json();
+                document.getElementById('backend-status').className = 'success';
+                document.getElementById('backend-status').textContent = '✅ Backend is running!';
+                document.getElementById('backend-result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('backend-status').className = 'error';
+                document.getElementById('backend-status').textContent = '❌ Backend connection failed!';
+                document.getElementById('backend-result').textContent = error.message;
+            }
+        }
+
+        // Test 2: Frontend environment
+        function testFrontend() {
+            const envCheck = {
+                'API URL': API_URL,
+                'Current Origin': window.location.origin,
+                'User Agent': navigator.userAgent.substring(0, 50) + '...'
+            };
+            document.getElementById('frontend-status').className = 'success';
+            document.getElementById('frontend-status').textContent = '✅ Frontend environment OK';
+            document.getElementById('frontend-result').textContent = JSON.stringify(envCheck, null, 2);
+        }
+
+        // Test 3: CORS
+        async function testCORS() {
+            try {
+                const response = await fetch(`${API_URL}/courts/`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    document.getElementById('cors-status').className = 'success';
+                    document.getElementById('cors-status').textContent = '✅ CORS is configured correctly!';
+                    document.getElementById('cors-result').textContent = 'Cross-origin requests are working properly.';
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                document.getElementById('cors-status').className = 'error';
+                document.getElementById('cors-status').textContent = '❌ CORS issue detected!';
+                document.getElementById('cors-result').textContent =
+                    'Error: ' + error.message + '\n\n' +
+                    'Fix: Add CORS_ALLOWED_ORIGINS=http://localhost:3000 to backend .env file';
+            }
+        }
+
+        // Test 4: Registration endpoint
+        async function testRegistration() {
+            document.getElementById('reg-status').className = 'pending';
+            document.getElementById('reg-status').textContent = '⏳ Testing registration endpoint...';
+
+            try {
+                const testData = {
+                    username: 'testuser_' + Date.now(),
+                    email: 'test_' + Date.now() + '@test.com',
+                    password1: 'TestPass123!',
+                    password2: 'TestPass123!',
+                    role: 'USER'
+                };
+
+                const response = await fetch(`${API_URL}/auth/registration/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('reg-status').className = 'success';
+                    document.getElementById('reg-status').textContent = '✅ Registration endpoint works!';
+                    document.getElementById('reg-result').textContent =
+                        'Success! User created:\n' + JSON.stringify(data, null, 2);
+                } else {
+                    document.getElementById('reg-status').className = 'error';
+                    document.getElementById('reg-status').textContent = '⚠️ Registration has validation errors:';
+                    document.getElementById('reg-result').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                document.getElementById('reg-status').className = 'error';
+                document.getElementById('reg-status').textContent = '❌ Registration endpoint error!';
+                document.getElementById('reg-result').textContent = error.message;
+            }
+        }
+
+        // Run tests on load
+        window.onload = function() {
+            testBackend();
+            testFrontend();
+            testCORS();
+        };
+    </script>
+</body>
+</html>
